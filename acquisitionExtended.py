@@ -8,6 +8,7 @@ import napari
 import math
 import utils
 from IPython.display import display, HTML
+from PIL import Image
 
 
 class acquisition:
@@ -67,6 +68,21 @@ class acquisition:
         wLC=int(acqParams[-2].split('\t')[0])
         self.xaxis=utils.formAxis(grating, wLC, self.wLDim)
     #============================ Image Processing =========================================    
+    def batchProcessND(self, nBin=[5,5,5,10], upLim=500, lowLim=15):
+        for t in range(self.tDim):
+            print('processing stack {} out of {}'.format(t+1, self.tDim))
+            for z in range(0, self.zDim, nBin[3]):
+                image0=(imageio.imread(utils.format_string(self.directory, self.name, t*self.zDim+z)))/nBin[3]
+                for z2 in range(z+1, z+nBin[3]):
+                    image0+=(imageio.imread(utils.format_string(self.directory, self.name, t*self.zDim+z2))/nBin[3])
+                im2=utils.reshape2D(image0, n=4, axis=1)
+                stack=np.reshape(im2, (self.xDim, self.yDim, self.wLDim))
+                nBin0=nBin[:3]
+                stackBinned=utils.binStack(stack, nBin0)
+                stackNew=utils.rescale(stackBinned, lowLim, upLim)
+                for w in range(np.shape(stackNew)[2]):
+                    Image.fromarray(255-stackNew[:,:,w]).save(self.directory+'processedND\\'+self.name+'Imap_t{}_w{}_z{}.tif'.format(t,w,z//nBin[3]))
+    
     def construct2D(self, z=0, t=0,  s1=400, s2=600, threshold=20, specImg=False, show=False, save=False, scaleVal=200):
         '''constructor to create intensity and spectral maps'''
         path=utils.formatString(self.directory, self.name, t*self.zDim+z)

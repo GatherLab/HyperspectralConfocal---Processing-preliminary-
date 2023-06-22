@@ -5,6 +5,7 @@ from scipy.signal import find_peaks
 import imageio
 import napari
 import math
+from PIL import Image
 
 def linear(x,a,b):
     return a*x+b
@@ -33,6 +34,24 @@ def reshape(spec):
     spec1[1::4]=tap2
     spec1[2::4]=tap3
     spec1[3::4]=tap4
+    return spec1
+
+def reshape2D(spec, n=4, axis=1):
+    #only call if len(spec)%n==0
+    if axis==0:
+        a=len(spec[0])
+        b=len(spec)//n
+    if axis==1:
+        a=len(spec)
+        b=len(spec[0])//n
+    spec1=np.zeros((a, b*n))
+    for i in range(n):
+        if axis==0:
+            tap=spec[i*b:(i+1)*b]
+            spec1[i::n]=tap
+        if axis==1:
+            tap=spec[:,i*b:(i+1)*b]
+            spec1[:,i::n]=tap
     return spec1
 
 def formAxis(gratingType=0, gratingCentre=600, width=2048):
@@ -129,3 +148,20 @@ def normArr(r, g, b):
     g=myA[1]
     b=myA[2]
     return r, g, b
+
+def rescale(a, lowLim, upLim):
+    #inverts and rescales 16bit images into 8bit unsigned integer for tracking algorithm use
+    a-=lowLim
+    a*=255
+    a/=(upLim-lowLim)
+    a=(a<0)*0+(a>=0)*a
+    a=(a<=255)*a+(a>255)*255
+    return np.uint8(a)
+
+def binStack(stack, nBin):
+    stackBinned=np.zeros(np.shape(stack)//nBin)
+    for i in range(nBin[0]):
+        for j in range(nBin[1]):
+            for k in range(nBin[2]):
+                stackBinned+=(stack[i::nBin[0], j::nBin[1], k::nBin[2]])/(np.average(nBin))
+    return stackBinned

@@ -1,5 +1,9 @@
 from acquisitionExtended import * #processing data class and dependencies
 from pandas import DataFrame, Series, read_csv  # for convenience
+import pims
+import trackpy as tp
+from zipfile import ZipFile
+import os
 
 class disk: #container to store trajectory information of disks
     def __init__(self, timesteps, partNo, tStep):
@@ -72,7 +76,7 @@ class disk: #container to store trajectory information of disks
         plt.ylim(0, upLim)
         plt.show()
         
-    def plotXY(self, acq, colorCode='wL'):
+    def plotXY(self, acq, colorCode='wL', nBin=[1,1,1,1]):
         validData=self.x!=0
         x=(self.x[validData]) 
         y=(self.y[validData])
@@ -93,8 +97,8 @@ class disk: #container to store trajectory information of disks
                 plt.plot([x[i-1], x[i]], [y[i-1], y[i]], color=(r,g,b))
             except:
                 print(time[i])
-        plt.xlim(0, acq.xDim)
-        plt.ylim(0, acq.yDim) 
+        plt.xlim(0, acq.xDim/nBin[0])
+        plt.ylim(0, acq.yDim/nBin[1]) 
 
 class trackDataND:    
     def __init__(self, linkedD, acq, nBin=[1,1,1,4],name='A0-'):#, xaxis=np.linspace(719.95, 681.43, 150), dim=[375, 375, 40, 48]):
@@ -149,15 +153,15 @@ class trackDataND:
             if len(xval)>minLen:
                 self.disks[key].fitAllWL(self.xdim, self.zdim, self.timesteps, LPsize=[1,3,3], plot=plot0, thresh=thresh)
             
-    def plotTrajs(self, acq, minLen=47, leg=False, colorCode='wL' , path='temp.png'):
+    def plotTrajs(self, acq, minLen=47, leg=False, colorCode='wL' , path='temp.png', nBin=[1,1,1,1]):
         count=0
         plt.figure(figsize=(5, 5))
         for key in self.disks:
             xval=list(filter(lambda num: num != 0, self.disks[key].x))
             if len(xval)>minLen:
                 (self.disks[key]).plotXY(acq, colorCode=colorCode)
-        plt.xlim(0, acq.xDim)
-        plt.ylim(0, acq.yDim) 
+        plt.xlim(0, acq.xDim/nBin[0])
+        plt.ylim(0, acq.yDim/nBin[1]) 
         plt.xticks([])
         plt.yticks([])
         plt.savefig(path)
